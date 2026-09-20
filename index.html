@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>遗传学卡方值计算器 | Chi-Square Calculator</title>
+  <style>
+    :root {
+      --primary: #1e88e5;
+      --primary-dark: #1565c0;
+      --success-bg: #e8f5e9;
+      --success-text: #2e7d32;
+      --success-border: #a5d6a7;
+      --warning-bg: #fff8e1;
+      --warning-text: #f57f17;
+      --warning-border: #ffe082;
+      --danger-bg: #ffebee;
+      --danger-text: #c62828;
+      --danger-border: #ef9a9a;
+      --card-bg: #ffffff;
+      --bg: #f5f7fb;
+      --text: #2c3e50;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 26px;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #1e293b;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #334155;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      color: #1e293b;
+      background: #fff;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30,136,229,0.15);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .chip-btn {
+      padding: 4px 10px;
+      background: #e2e8f0;
+      border: none;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.2s;
+    }
+
+    .chip-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Metric cards */
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 600px) {
+      .metric-row { grid-template-columns: 1fr; }
+    }
+
+    .metric-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .metric-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .metric-val.primary { color: var(--primary); }
+    .metric-val.warn { color: #f59e0b; }
+    .metric-val.crit { color: #ef4444; }
+
+    .metric-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-banner.not_significant {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+      color: var(--success-text);
+    }
+
+    .alert-banner.significant {
+      background: var(--warning-bg);
+      border-color: var(--warning-border);
+      color: var(--warning-text);
+    }
+
+    .alert-banner.highly_significant {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger-text);
+    }
+
+    .alert-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-desc {
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .data-table th, .data-table td {
+      padding: 8px 10px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .data-table th:first-child, .data-table td:first-child {
+      text-align: left;
+    }
+
+    .data-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .data-table tr:hover td {
+      background: #f1f5f9;
+    }
+
+    .data-table tfoot td {
+      font-weight: 700;
+      background: #f8fafc;
+      border-top: 2px solid var(--border);
+    }
+
+    /* SVG Curve */
+    .chart-container {
+      width: 100%;
+      height: 250px;
+      margin-top: 10px;
+      background: #ffffff;
+      border-radius: 6px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: normal;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🧬 遗传学卡方值计算器</h1>
+    <p>遗传学适合度检验 (Goodness-of-Fit Test) · 孟德尔分离比验证 · 差异显著性判定</p>
+  </header>
+
+  <div class="grid">
+    <!-- Left: Input Controls -->
+    <div>
+      <div class="card">
+        <div class="card-title">⚙️ 数据输入与设置</div>
+
+        <div class="form-group">
+          <label>遗传学常见分离比快捷预设：</label>
+          <div class="btn-group">
+            <button class="chip-btn" onclick="applyPreset('3:1')">3:1 自交</button>
+            <button class="chip-btn" onclick="applyPreset('1:1')">1:1 测交</button>
+            <button class="chip-btn" onclick="applyPreset('1:2:1')">1:2:1 不完全显性</button>
+            <button class="chip-btn" onclick="applyPreset('9:3:3:1')">9:3:3:1 双杂合自交</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="obsInput">1. 观测值 (Observed Values, O)：</label>
+          <textarea id="obsInput" rows="2" placeholder="用逗号或空格分隔，如: 315, 108, 101, 32">315, 108, 101, 32</textarea>
+          <span style="font-size: 11px; color: var(--text-muted);">各表型类别对应的实际统计个体数</span>
+        </div>
+
+        <div class="form-group">
+          <label>2. 期望值输入模式：</label>
+          <div style="display: flex; gap: 15px; margin-bottom: 8px; font-size: 13px;">
+            <label class="checkbox-label">
+              <input type="radio" name="expMode" value="ratio" checked onchange="toggleExpMode()">
+              理论分离比 (如 9:3:3:1)
+            </label>
+            <label class="checkbox-label">
+              <input type="radio" name="expMode" value="direct" onchange="toggleExpMode()">
+              直接数值 (如 312.75...)
+            </label>
+          </div>
+
+          <div id="ratioGroup">
+            <input type="text" id="ratioInput" value="9:3:3:1" placeholder="如 9:3:3:1 或 3:1">
+            <span style="font-size: 11px; color: var(--text-muted);">系统将根据总样本量自动折算期望值 E = N × (比率/总比率)</span>
+          </div>
+
+          <div id="directExpGroup" style="display: none;">
+            <textarea id="expInput" rows="2" placeholder="与观测值等长，如: 312.75, 104.25, 104.25, 34.75"></textarea>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label" style="margin-bottom: 8px;">
+            <input type="checkbox" id="autoDf" checked onchange="toggleDfInput()">
+            自动计算自由度 (df = 表型数 k - 1)
+          </label>
+          <div id="dfInputWrapper" style="display: none;">
+            <label for="dfInput" style="font-size: 12px;">指定自由度 (Degrees of Freedom):</label>
+            <input type="number" id="dfInput" min="1" step="1" value="3">
+          </div>
+        </div>
+
+        <div class="form-group" id="yatesGroup" style="display: none;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="yatesCheck">
+            启用 Yates 连续性校正 (推荐当 df = 1 时选用)
+          </label>
+        </div>
+
+        <button class="btn-primary" onclick="calculate()">🚀 计算卡方值并检验</button>
+      </div>
+    </div>
+
+    <!-- Right: Results Display -->
+    <div>
+      <!-- Key Metric Cards -->
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">实际计算卡方值 (χ²_calc)</div>
+          <div class="metric-val primary" id="valChisq">0.4700</div>
+          <div class="metric-sub" id="subChisq">P = 0.9254 (df = 3)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">p = 0.05 临界表值 (χ²_0.05)</div>
+          <div class="metric-val warn" id="valCrit005">7.8147</div>
+          <div class="metric-sub">5% 显著性水平门槛</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">p = 0.01 临界表值 (χ²_0.01)</div>
+          <div class="metric-val crit" id="valCrit001">11.3449</div>
+          <div class="metric-sub">1% 极显著水平门槛</div>
+        </div>
+      </div>
+
+      <!-- Conclusion Alert Banner -->
+      <div class="alert-banner not_significant" id="conclusionBanner">
+        <div class="alert-title" id="conclusionTitle">✅ 检验结论：差异不显著 (P > 0.05, ns)</div>
+        <div class="alert-desc" id="conclusionDesc">
+          计算卡方值 (0.4700) < 临界表值 χ²(0.05) = 7.8147。在 α=0.05 显著性水平下，接受原假设 H₀。观测结果与理论预期无显著差异，符合遗传理论预期分离比率。
+        </div>
+      </div>
+
+      <!-- Curve Chart Card -->
+      <div class="card">
+        <div class="card-title">📈 卡方分布概率密度曲线与显著性拒绝域</div>
+        <svg id="chartSvg" class="chart-container" viewBox="0 0 600 240"></svg>
+      </div>
+
+      <!-- Breakdown Table Card -->
+      <div class="card">
+        <div class="card-title">📋 观测与理论值分项计算明细表</div>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>表型组别</th>
+                <th>观测数 (O)</th>
+                <th>期望数 (E)</th>
+                <th>离差 (O-E)</th>
+                <th>(O-E)²</th>
+                <th>卡方贡献 (χ²_i)</th>
+                <th>贡献率 (%)</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot id="tableFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // High-accuracy Chi-Square Math
+  // Log Gamma approximation (Lanczos)
+  function logGamma(z) {
+    const p = [
+      676.5203681218851, -1259.1392167224028, 771.32342877765313,
+      -176.61502916214059, 12.507343278686905, -0.13857109583115912,
+      9.9843695780195716e-6, 1.5056327351493116e-7
+    ];
+    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
+    z -= 1;
+    let x = 0.99999999999980993;
+    for (let i = 0; i < p.length; i++) x += p[i] / (z + i + 1);
+    let t = z + p.length - 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+  }
+
+  // Lower regularized incomplete gamma P(a, x)
+  function gammp(a, x) {
+    if (x <= 0) return 0;
+    if (x < a + 1) {
+      // Series expansion
+      let ap = a;
+      let sum = 1 / a;
+      let del = sum;
+      for (let n = 1; n <= 200; n++) {
+        ap += 1;
+        del *= x / ap;
+        sum += del;
+        if (Math.abs(del) < Math.abs(sum) * 1e-14) break;
+      }
+      return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
+    } else {
+      // Continued fraction for Q(a, x)
+      let b = x + 1 - a;
+      let c = 1 / 1e-30;
+      let d = 1 / b;
+      let h = d;
+      for (let i = 1; i <= 200; i++) {
+        let an = -i * (i - a);
+        b += 2;
+        d = an * d + b;
+        if (Math.abs(d) < 1e-30) d = 1e-30;
+        c = b + an / c;
+        if (Math.abs(c) < 1e-30) c = 1e-30;
+        d = 1 / d;
+        let del = d * c;
+        h *= del;
+        if (Math.abs(del - 1) < 1e-14) break;
+      }
+      let q = Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
+      return 1 - q;
+    }
+  }
+
+  // Chi-square PDF
+  function chisqPDF(x, df) {
+    if (x <= 0) return 0;
+    const k2 = df / 2;
+    return Math.exp((k2 - 1) * Math.log(x) - x / 2 - k2 * Math.log(2) - logGamma(k2));
+  }
+
+  // Chi-square upper tail P-value: P(X >= x)
+  function chisqPValue(x, df) {
+    if (x <= 0) return 1.0;
+    const cdf = gammp(df / 2, x / 2);
+    return Math.max(0, Math.min(1, 1 - cdf));
+  }
+
+  // Critical value for alpha: finds x such that chisqPValue(x, df) = alpha
+  function chisqCrit(alpha, df) {
+    // Wilson-Hilferty initial approximation
+    let z = (alpha === 0.05) ? 1.64485362695 : (alpha === 0.01) ? 2.32634787404 : 1.95996;
+    let v = 2 / (9 * df);
+    let term = 1 - v + z * Math.sqrt(v);
+    let x = df * Math.pow(term, 3);
+    if (x < 0.001) x = 0.001;
+
+    // Newton-Raphson refinement
+    for (let iter = 0; iter < 10; iter++) {
+      let pCurrent = chisqPValue(x, df);
+      let diff = pCurrent - alpha;
+      if (Math.abs(diff) < 1e-12) break;
+      let pdf = chisqPDF(x, df);
+      if (pdf < 1e-15) break;
+      // derivative of upper tail P(X >= x) with respect to x is -pdf(x)
+      let dx = diff / pdf;
+      x += dx;
+      if (x <= 0) x = 0.01;
+    }
+    return x;
+  }
+
+  // UI helpers
+  function parseNumbers(str) {
+    if (!str) return [];
+    return str.trim().split(/[,;:\s\t]+/).filter(Boolean).map(Number).filter(n => !isNaN(n));
+  }
+
+  function toggleExpMode() {
+    const mode = document.querySelector('input[name="expMode"]:checked').value;
+    document.getElementById('ratioGroup').style.display = (mode === 'ratio') ? 'block' : 'none';
+    document.getElementById('directExpGroup').style.display = (mode === 'direct') ? 'block' : 'none';
+  }
+
+  function toggleDfInput() {
+    const auto = document.getElementById('autoDf').checked;
+    document.getElementById('dfInputWrapper').style.display = auto ? 'none' : 'block';
+  }
+
+  function applyPreset(preset) {
+    if (preset === '3:1') {
+      document.getElementById('obsInput').value = '305, 95';
+      document.querySelector('input[name="expMode"][value="ratio"]').checked = true;
+      toggleExpMode();
+      document.getElementById('ratioInput').value = '3:1';
+    } else if (preset === '1:1') {
+      document.getElementById('obsInput').value = '85, 75';
+      document.querySelector('input[name="expMode"][value="ratio"]').checked = true;
+      toggleExpMode();
+      document.getElementById('ratioInput').value = '1:1';
+    } else if (preset === '1:2:1') {
+      document.getElementById('obsInput').value = '52, 98, 50';
+      document.querySelector('input[name="expMode"][value="ratio"]').checked = true;
+      toggleExpMode();
+      document.getElementById('ratioInput').value = '1:2:1';
+    } else if (preset === '9:3:3:1') {
+      document.getElementById('obsInput').value = '315, 108, 101, 32';
+      document.querySelector('input[name="expMode"][value="ratio"]').checked = true;
+      toggleExpMode();
+      document.getElementById('ratioInput').value = '9:3:3:1';
+    }
+    calculate();
+  }
+
+  function calculate() {
+    const obs = parseNumbers(document.getElementById('obsInput').value);
+    if (obs.length === 0) {
+      alert('请输入有效的观测值！');
+      return;
+    }
+
+    const mode = document.querySelector('input[name="expMode"]:checked').value;
+    const totalObs = obs.reduce((a, b) => a + b, 0);
+    let exp = [];
+
+    if (mode === 'ratio') {
+      const ratio = parseNumbers(document.getElementById('ratioInput').value);
+      if (ratio.length !== obs.length) {
+        alert(`比例项数 (${ratio.length}) 必须与观测值表型类别数 (${obs.length}) 相同！`);
+        return;
+      }
+      const sumRatio = ratio.reduce((a, b) => a + b, 0);
+      exp = ratio.map(r => (totalObs * r) / sumRatio);
+    } else {
+      exp = parseNumbers(document.getElementById('expInput').value);
+      if (exp.length !== obs.length) {
+        alert(`期望值个数 (${exp.length}) 必须与观测值个数 (${obs.length}) 一致！`);
+        return;
+      }
+    }
+
+    const autoDf = document.getElementById('autoDf').checked;
+    let df = autoDf ? Math.max(1, obs.length - 1) : parseInt(document.getElementById('dfInput').value, 10);
+    if (isNaN(df) || df < 1) df = 1;
+
+    // Show/hide Yates option
+    const yatesGroup = document.getElementById('yatesGroup');
+    if (df === 1 && obs.length === 2) {
+      yatesGroup.style.display = 'block';
+    } else {
+      yatesGroup.style.display = 'none';
+      document.getElementById('yatesCheck').checked = false;
+    }
+    const applyYates = document.getElementById('yatesCheck').checked && (df === 1) && (obs.length === 2);
+
+    // Calculate Chi-Square
+    let chisq = 0;
+    const rows = [];
+    for (let i = 0; i < obs.length; i++) {
+      const o = obs[i];
+      const e = exp[i];
+      const dev = o - e;
+      let term = 0;
+      if (applyYates) {
+        const adjDev = Math.max(0, Math.abs(dev) - 0.5);
+        term = (adjDev * adjDev) / e;
+      } else {
+        term = (dev * dev) / e;
+      }
+      chisq += term;
+      rows.push({ category: i + 1, o, e, dev, devSq: dev * dev, term });
+    }
+
+    // Critical values & P-value
+    const crit005 = chisqCrit(0.05, df);
+    const crit001 = chisqCrit(0.01, df);
+    const pVal = chisqPValue(chisq, df);
+
+    // Update UI Metrics
+    document.getElementById('valChisq').textContent = chisq.toFixed(4);
+    document.getElementById('subChisq').textContent = `P = ${pVal < 0.0001 ? pVal.toExponential(3) : pVal.toFixed(4)} (df = ${df})`;
+    document.getElementById('valCrit005').textContent = crit005.toFixed(4);
+    document.getElementById('valCrit001').textContent = crit001.toFixed(4);
+
+    // Update Banner
+    const banner = document.getElementById('conclusionBanner');
+    const bTitle = document.getElementById('conclusionTitle');
+    const bDesc = document.getElementById('conclusionDesc');
+
+    banner.className = 'alert-banner ';
+    if (chisq < crit005) {
+      banner.classList.add('not_significant');
+      bTitle.innerHTML = '✅ 检验判定：差异不显著 (P > 0.05, ns)';
+      bDesc.innerHTML = `计算卡方值 (<b>${chisq.toFixed(4)}</b>) < 临界表值 χ²(0.05) = <b>${crit005.toFixed(4)}</b>。在 α = 0.05 检验水准下，接受原假设 H₀。实际观测结果与理论预期比率无显著偏离，<b>符合遗传分离定律预期</b>。`;
+    } else if (chisq < crit001) {
+      banner.classList.add('significant');
+      bTitle.innerHTML = '⚠️ 检验判定：差异显著 (0.01 < P ≤ 0.05, 显著*)';
+      bDesc.innerHTML = `计算卡方值 (<b>${chisq.toFixed(4)}</b>) 介于 χ²(0.05) = <b>${crit005.toFixed(4)}</b> 与 χ²(0.01) = <b>${crit001.toFixed(4)}</b> 之间。在 α = 0.05 水准下拒绝原假设 H₀。观测结果与理论预期存在显著差异（可能存在活力差异、环境选择或轻度分离偏倚）。`;
+    } else {
+      banner.classList.add('highly_significant');
+      bTitle.innerHTML = '❌ 检验判定：差异极显著 (P ≤ 0.01, 极显著**)';
+      bDesc.innerHTML = `计算卡方值 (<b>${chisq.toFixed(4)}</b>) ≥ 临界表值 χ²(0.01) = <b>${crit001.toFixed(4)}</b>。差异达极显著水平 (P ≤ 0.01)，极显著拒绝原假设 H₀。数据严重偏离理论分离比，<b>很可能存在配子/胚胎致死、基因连锁或非孟德尔遗传现象</b>。`;
+    }
+
+    // Update Breakdown Table
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const pct = (chisq > 0) ? ((r.term / chisq) * 100).toFixed(1) : '0.0';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>表型类别 ${r.category}</td>
+        <td>${r.o}</td>
+        <td>${r.e.toFixed(3)}</td>
+        <td style="color: ${r.dev >= 0 ? '#15803d' : '#b91c1c'};">${r.dev >= 0 ? '+' : ''}${r.dev.toFixed(3)}</td>
+        <td>${r.devSq.toFixed(3)}</td>
+        <td><b>${r.term.toFixed(4)}</b></td>
+        <td>${pct}%</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Foot row
+    const tfoot = document.getElementById('tableFoot');
+    tfoot.innerHTML = `
+      <tr>
+        <td>合计 (Total)</td>
+        <td>${totalObs}</td>
+        <td>${totalObs.toFixed(3)}</td>
+        <td>0.000</td>
+        <td>—</td>
+        <td><b style="color: var(--primary);">${chisq.toFixed(4)}</b></td>
+        <td>100.0%</td>
+      </tr>
+    `;
+
+    // Render SVG Curve
+    renderDistributionCurve(df, chisq, crit005, crit001);
+  }
+
+  function renderDistributionCurve(df, chisq, crit005, crit001) {
+    const svg = document.getElementById('chartSvg');
+    const width = 600;
+    const height = 240;
+    const padding = { left: 45, right: 30, top: 25, bottom: 35 };
+
+    const xMax = Math.max(crit001 * 1.45, chisq * 1.25, 14);
+    const steps = 250;
+    let points = [];
+    let maxPdf = 0;
+
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * xMax;
+      const y = (x === 0 && df === 1) ? chisqPDF(0.05, df) : chisqPDF(x, df);
+      if (y > maxPdf) maxPdf = y;
+      points.push({ x, y });
+    }
+    if (maxPdf === 0) maxPdf = 0.5;
+
+    const plotW = width - padding.left - padding.right;
+    const plotH = height - padding.top - padding.bottom;
+
+    const scaleX = x => padding.left + (x / xMax) * plotW;
+    const scaleY = y => padding.top + plotH - (y / (maxPdf * 1.15)) * plotH;
+
+    // SVG elements
+    let svgContent = '';
+
+    // Axes
+    svgContent += `<line x1="${padding.left}" y1="${padding.top + plotH}" x2="${width - padding.right}" y2="${padding.top + plotH}" stroke="#94a3b8" stroke-width="1.5" />`;
+    svgContent += `<line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + plotH}" stroke="#94a3b8" stroke-width="1.5" />`;
+
+    // 0.05 region fill
+    let poly05 = `${scaleX(crit005)},${scaleY(0)} `;
+    points.filter(pt => pt.x >= crit005).forEach(pt => {
+      poly05 += `${scaleX(pt.x)},${scaleY(pt.y)} `;
+    });
+    poly05 += `${scaleX(xMax)},${scaleY(0)}`;
+    svgContent += `<polygon points="${poly05}" fill="#fed7aa" opacity="0.8" />`;
+
+    // 0.01 region fill
+    let poly01 = `${scaleX(crit001)},${scaleY(0)} `;
+    points.filter(pt => pt.x >= crit001).forEach(pt => {
+      poly01 += `${scaleX(pt.x)},${scaleY(pt.y)} `;
+    });
+    poly01 += `${scaleX(xMax)},${scaleY(0)}`;
+    svgContent += `<polygon points="${poly01}" fill="#fecaca" opacity="0.9" />`;
+
+    // Curve path
+    let pathD = `M ${scaleX(points[0].x)} ${scaleY(points[0].y)}`;
+    for (let i = 1; i < points.length; i++) {
+      pathD += ` L ${scaleX(points[i].x)} ${scaleY(points[i].y)}`;
+    }
+    svgContent += `<path d="${pathD}" fill="none" stroke="#334155" stroke-width="2.5" />`;
+
+    // Critical line 0.05
+    const x005 = scaleX(crit005);
+    svgContent += `<line x1="${x005}" y1="${padding.top}" x2="${x005}" y2="${padding.top + plotH}" stroke="#ea580c" stroke-width="1.8" stroke-dasharray="4 3" />`;
+    svgContent += `<text x="${x005}" y="${padding.top - 8}" fill="#ea580c" font-size="11" text-anchor="middle" font-weight="600">χ²₀.₀₅=${crit005.toFixed(2)}</text>`;
+
+    // Critical line 0.01
+    const x001 = scaleX(crit001);
+    svgContent += `<line x1="${x001}" y1="${padding.top}" x2="${x001}" y2="${padding.top + plotH}" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="4 3" />`;
+    svgContent += `<text x="${x001}" y="${padding.top - 8}" fill="#dc2626" font-size="11" text-anchor="middle" font-weight="600">χ²₀.₀₁=${crit001.toFixed(2)}</text>`;
+
+    // Calculated Chisq marker
+    const xCalc = scaleX(chisq);
+    svgContent += `<line x1="${xCalc}" y1="${padding.top}" x2="${xCalc}" y2="${padding.top + plotH}" stroke="#0284c7" stroke-width="3" />`;
+    svgContent += `<circle cx="${xCalc}" cy="${scaleY(chisqPDF(chisq, df))}" r="5" fill="#0284c7" />`;
+    svgContent += `<text x="${xCalc}" y="${padding.top + plotH + 18}" fill="#0284c7" font-size="11" font-weight="700" text-anchor="middle">实际 χ²=${chisq.toFixed(2)}</text>`;
+
+    // Labels
+    svgContent += `<text x="${width / 2}" y="${height - 5}" font-size="11" fill="#64748b" text-anchor="middle">卡方值 (Chi-Square Statistic)</text>`;
+
+    svg.innerHTML = svgContent;
+  }
+
+  // Run on load
+  window.addEventListener('DOMContentLoaded', calculate);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+# R specific
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# macOS
+.DS_Store
+
+# Output & Temp directories
+output/
+results/
+tmp/

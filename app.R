@@ -23,37 +23,54 @@ ui <- page_navbar(
     title = "🧮 适合度检验计算器",
     layout_sidebar(
       sidebar = sidebar(
-        width = 360,
-        title = "输入检验数据",
+        width = 390,
+        title = "输入检验数据与设置",
 
-        # Preset selection
+        # Preset selection with full genetic ratios
         selectInput(
           "preset",
-          "遗传学经典比例预设 (可选快捷填入):",
-          choices = c(
-            "自定义输入" = "custom",
-            "孟德尔自交 3:1 (单对等位基因)" = "m_3_1",
-            "孟德尔测交 1:1 (等位基因测交)" = "m_1_1",
-            "不完全显性 1:2:1" = "m_1_2_1",
-            "孟德尔两对自交 9:3:3:1 (双杂合子自交)" = "m_9_3_3_1",
-            "双隐性测交 1:1:1:1" = "m_1_1_1_1"
+          "遗传学分离比预设 (或选自由设置):",
+          choices = list(
+            "自由设置" = c("自由自定义比例 (Custom Ratio)" = "custom"),
+            "基础孟德尔分离比" = c(
+              "3:1 (单杂合自交)" = "m_3_1",
+              "1:1 (等位基因测交)" = "m_1_1",
+              "1:2:1 (不完全显性/共显性)" = "m_1_2_1",
+              "2:1 (显性纯合致死)" = "m_2_1",
+              "9:3:3:1 (双杂合自交自由组合)" = "m_9_3_3_1",
+              "1:1:1:1 (双隐性测交)" = "m_1_1_1_1"
+            ),
+            "两对基因相互作用 (9:3:3:1 变型)" = c(
+              "9:7 (互补作用 / 香豌豆花色)" = "m_9_7",
+              "9:3:4 (隐性上位 / 家兔毛色)" = "m_9_3_4",
+              "12:3:1 (显性上位 / 西葫芦皮色)" = "m_12_3_1",
+              "13:3 (显性抑制 / 家鸡羽色)" = "m_13_3",
+              "15:1 (重叠基因 / 荠菜果形)" = "m_15_1",
+              "9:6:1 (积加作用 / 南瓜果形)" = "m_9_6_1",
+              "6:3:2:1 (单对显性致死自交)" = "m_6_3_2_1"
+            )
           ),
-          selected = "custom"
-        ),
-
-        textAreaInput(
-          "obs_input",
-          "1. 观测值 (Observed Values):",
-          value = "315, 108, 101, 32",
-          rows = 2,
-          placeholder = "用逗号或空格分隔，如: 315, 108, 101, 32"
+          selected = "m_9_7"
         ),
 
         radioButtons(
           "exp_mode",
-          "2. 期望值输入模式:",
-          choices = c("直接输入期望数值" = "direct", "输入理论分离比例 (自动换算)" = "ratio"),
-          selected = "direct"
+          "期望值设定模式:",
+          choices = c("自由设置理论比例 (Ratio)" = "ratio", "直接输入期望数值 (Counts)" = "direct"),
+          selected = "ratio"
+        ),
+
+        conditionalPanel(
+          condition = "input.exp_mode == 'ratio'",
+          div(
+            textInput(
+              "ratio_input",
+              "理论分离比 (支持冒号/逗号/空格分隔):",
+              value = "9:7",
+              placeholder = "如 9:7, 9:3:4, 13:3, 1:4:6:4:1 等"
+            ),
+            uiOutput("ratio_hint")
+          )
         ),
 
         conditionalPanel(
@@ -61,32 +78,30 @@ ui <- page_navbar(
           textAreaInput(
             "exp_input",
             "期望值 (Expected Values):",
-            value = "312.75, 104.25, 104.25, 34.75",
+            value = "180, 140",
             rows = 2,
-            placeholder = "与观测值等长，如: 312.75, 104.25, 104.25, 34.75"
+            placeholder = "与观测值等长，如: 180, 140"
           )
         ),
 
-        conditionalPanel(
-          condition = "input.exp_mode == 'ratio'",
-          textInput(
-            "ratio_input",
-            "理论遗传比例 (Ratio):",
-            value = "9:3:3:1",
-            placeholder = "如 9:3:3:1 或 3:1 或 1:1"
-          )
+        textAreaInput(
+          "obs_input",
+          "实际观测值 (Observed Values, O):",
+          value = "188, 140",
+          rows = 2,
+          placeholder = "用逗号或空格分隔，如: 188, 140"
         ),
 
-        checkboxInput("auto_df", "自动根据表型数计算自由度 (df = k - 1)", value = TRUE),
+        checkboxInput("auto_df", "自动计算自由度 (df = 表型数 k - 1)", value = TRUE),
 
         conditionalPanel(
           condition = "!input.auto_df",
-          numericInput("custom_df", "指定自由度 (Degrees of Freedom):", value = 3, min = 1, step = 1)
+          numericInput("custom_df", "手动指定自由度 (df):", value = 1, min = 1, step = 1)
         ),
 
         conditionalPanel(
           condition = "(input.auto_df && input.obs_input.split(/[,\\s]+/).filter(Boolean).length == 2) || (!input.auto_df && input.custom_df == 1)",
-          checkboxInput("yates_corr", "启用 Yates 连续性校正 (推荐在 df = 1 时选用)", value = FALSE)
+          checkboxInput("yates_corr", "启用 Yates 连续性校正 (推荐在 df = 1 且两类别时选用)", value = FALSE)
         ),
 
         hr(),
@@ -141,34 +156,28 @@ ui <- page_navbar(
   ),
 
   nav_panel(
-    title = "📖 遗传学卡方速查与说明",
+    title = "📖 遗传学常见分离比速查表",
     card(
-      card_header("遗传学卡方适合度检验知识速查"),
+      card_header("遗传学经典基因互作分离比大全 (均源于 9:3:3:1 的演变)"),
       card_body(
         markdown("
-### 一、适合度检验原理 (Goodness-of-Fit Test)
-在遗传学中，卡方适合度检验用于检验杂交试验后代的表型分离比是否符合特定的孟德尔分离假说（如 3:1、1:1、9:3:3:1 等）。
+### 一、孟德尔经典分离与两对基因上位/互作比率汇总
 
-- **原假设 $H_0$**：观测值与理论预期值无显著差异，符合预期的遗传比率。
-- **备择假设 $H_1$**：观测值与理论预期值有显著差异，不符合预期的遗传比率。
-
-### 二、计算公式
-$$\\chi^2 = \\sum_{i=1}^k \\frac{(O_i - E_i)^2}{E_i}$$
-- $O_i$：第 $i$ 类表型的实际观测数 (Observed)
-- $E_i$：第 $i$ 类表型的理论期望数 (Expected)
-- $k$：表型类别数
-- 自由度 $df = k - 1$ (在仅有总数限制的简单适合度检验中)
-
-### 三、显著性判定准则
-| 检验结果 | 概率范围 | 判定结论 | 遗传学解释 |
-| :--- | :--- | :--- | :--- |
-| $\\chi^2 < \\chi^2_{0.05}$ | $P > 0.05$ | **不显著 (ns)** | 接受 $H_0$：观测结果符合理论遗传规律 |
-| $\\chi^2_{0.05} \\le \\chi^2 < \\chi^2_{0.01}$ | $0.01 < P \\le 0.05$ | **差异显著 (*)** | 拒绝 $H_0$：实际数据与理论比率存在显著差异 |
-| $\\chi^2 \\ge \\chi^2_{0.01}$ | $P \\le 0.01$ | **差异极显著 (**)** | 极显著拒绝 $H_0$：严重偏离理论比率 (可能存在致死、连锁等) |
-
-### 四、Yates 连续性校正说明
-当自由度 $df = 1$ (即只有两类表型) 且样本量较小时，离散的二项分布近似为连续的卡方分布时可能偏高，可采用 Yates 连续性校正：
-$$\\chi^2_c = \\sum_{i=1}^2 \\frac{(|O_i - E_i| - 0.5)^2}{E_i}$$
+| 作用类型 | 理论比率 | 自由度 $df$ | 典型生物学实例 | 分子/遗传机理简述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **单杂合自交** | **3:1** | 1 | 豌豆高茎与矮茎 (Dd × Dd) | 完全显性 |
+| **测交分离比** | **1:1** | 1 | 豌豆测交 (Dd × dd) | 等位基因分离 |
+| **不完全显性** | **1:2:1** | 2 | 金鱼草花色 (红:粉:白) | 杂合子表型介于纯合子之间 |
+| **显性致死** | **2:1** | 1 | 小鼠黄毛基因 ($A^y A \times A^y A$) | 显性纯合致死 ($A^y A^y$ 死亡) |
+| **自由组合** | **9:3:3:1** | 3 | 豌豆黄圆:绿圆:黄皱:绿皱 | 两对独立等位基因无互作 |
+| **双杂测交** | **1:1:1:1** | 3 | 测交后代表型比例 | 两对等位基因各自独立分离 |
+| **互补作用** | **9:7** | 1 | 香豌豆花色 (紫花:白花) | 需两对显性基因同时存在 ($A\\_B\\_$) 才能成色，缺少任一均为白色 ($9 : (3+3+1)$) |
+| **隐性上位** | **9:3:4** | 2 | 家兔毛色 (灰:黑:白) | 一对隐性纯合 ($bb$) 对另一对表型有遮盖效应 ($9 : 3 : (3+1)$) |
+| **显性上位** | **12:3:1** | 2 | 西葫芦皮色 (白:黄:绿) | 显性基因 ($A\\_$) 遮盖另一对基因的表现 ($(9+3) : 3 : 1$) |
+| **显性抑制** | **13:3** | 1 | 家鸡羽色 (白羽:着色羽) | 一个显性基因本身不显色，但能抑制另一显性基因表现 ($(9+3+1) : 3$) |
+| **重叠作用** | **15:1** | 1 | 荠菜果形 (三角形:卵圆形) | 只要含任一显性基因即表现同一性状 ($(9+3+3) : 1$) |
+| **积加作用** | **9:6:1** | 2 | 南瓜果形 (扁盘:圆球:长圆) | 双显性一种形状，单显性另一种形状，双隐性第三种形状 ($9 : (3+3) : 1$) |
+| **单对显性致死**| **6:3:2:1** | 3 | 两对基因其中一对纯合致死 | $(2:1) \\times (3:1) = 6:3:2:1$ |
         ")
       )
     )
@@ -179,7 +188,36 @@ server <- function(input, output, session) {
 
   # Handle presets
   observeEvent(input$preset, {
-    if (input$preset == "m_3_1") {
+    req(input$preset)
+    if (input$preset == "m_9_7") {
+      updateTextAreaInput(session, "obs_input", value = "188, 140")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "9:7")
+    } else if (input$preset == "m_9_3_4") {
+      updateTextAreaInput(session, "obs_input", value = "180, 62, 78")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "9:3:4")
+    } else if (input$preset == "m_12_3_1") {
+      updateTextAreaInput(session, "obs_input", value = "241, 58, 21")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "12:3:1")
+    } else if (input$preset == "m_13_3") {
+      updateTextAreaInput(session, "obs_input", value = "262, 58")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "13:3")
+    } else if (input$preset == "m_15_1") {
+      updateTextAreaInput(session, "obs_input", value = "302, 18")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "15:1")
+    } else if (input$preset == "m_9_6_1") {
+      updateTextAreaInput(session, "obs_input", value = "182, 118, 20")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "9:6:1")
+    } else if (input$preset == "m_6_3_2_1") {
+      updateTextAreaInput(session, "obs_input", value = "152, 78, 48, 26")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "6:3:2:1")
+    } else if (input$preset == "m_3_1") {
       updateTextAreaInput(session, "obs_input", value = "305, 95")
       updateRadioButtons(session, "exp_mode", selected = "ratio")
       updateTextInput(session, "ratio_input", value = "3:1")
@@ -191,6 +229,10 @@ server <- function(input, output, session) {
       updateTextAreaInput(session, "obs_input", value = "52, 98, 50")
       updateRadioButtons(session, "exp_mode", selected = "ratio")
       updateTextInput(session, "ratio_input", value = "1:2:1")
+    } else if (input$preset == "m_2_1") {
+      updateTextAreaInput(session, "obs_input", value = "142, 68")
+      updateRadioButtons(session, "exp_mode", selected = "ratio")
+      updateTextInput(session, "ratio_input", value = "2:1")
     } else if (input$preset == "m_9_3_3_1") {
       updateTextAreaInput(session, "obs_input", value = "315, 108, 101, 32")
       updateRadioButtons(session, "exp_mode", selected = "ratio")
@@ -210,8 +252,19 @@ server <- function(input, output, session) {
     vals[!is.na(vals)]
   }
 
+  output$ratio_hint <- renderUI({
+    req(input$ratio_input)
+    r <- parse_vector(input$ratio_input)
+    if (is.null(r) || length(r) < 2) {
+      return(p(class = "text-danger small mt-1", "⚠️ 请输入至少两项比例 (例如 9:7)"))
+    }
+    pcts <- paste0(round(r / sum(r) * 100, 1), "%", collapse = " : ")
+    p(class = "text-info small mt-1",
+      sprintf("✓ 识别到 %d 项比例 (%s) | 理论比率: %s",
+              length(r), paste(r, collapse = " : "), pcts))
+  })
+
   calc_results <- reactive({
-    # Dependency on calculate button or inputs
     input$btn_calc
 
     isolate({
@@ -262,7 +315,7 @@ server <- function(input, output, session) {
     res <- calc_results()
     if (is.null(res) || !is.null(res$error)) return(h3("—", class = "text-muted"))
     tagList(
-      h2(sprintf("%.4f", res$crit_005), class = "text-info fw-bold mb-0"),
+      h2(sprintf("%.4f", res$crit_005), class = "text-warning fw-bold mb-0"),
       p(class = "text-muted mt-1 mb-0", "α = 0.05 临界值 (5% 界限)")
     )
   })
@@ -272,7 +325,7 @@ server <- function(input, output, session) {
     res <- calc_results()
     if (is.null(res) || !is.null(res$error)) return(h3("—", class = "text-muted"))
     tagList(
-      h2(sprintf("%.4f", res$crit_001), class = "text-warning fw-bold mb-0"),
+      h2(sprintf("%.4f", res$crit_001), class = "text-danger fw-bold mb-0"),
       p(class = "text-muted mt-1 mb-0", "α = 0.01 临界值 (1% 界限)")
     )
   })
@@ -328,7 +381,6 @@ server <- function(input, output, session) {
     x_vals <- seq(0.01, x_max, length.out = 500)
     y_vals <- dchisq(x_vals, df = df)
 
-    # Plot setup
     par(mar = c(4.5, 4.5, 3, 2), bg = "#FAFAFA")
     plot(x_vals, y_vals, type = "l", lwd = 2.5, col = "#37474F",
          xlab = "卡方统计量 (χ²)", ylab = "概率密度 (Density)",
@@ -346,14 +398,9 @@ server <- function(input, output, session) {
     y_01 <- dchisq(x_01, df = df)
     polygon(c(res$crit_001, x_01, x_max), c(0, y_01, 0), col = rgb(0.9, 0.1, 0.1, 0.45), border = NA)
 
-    # Redraw line
     lines(x_vals, y_vals, lwd = 2.5, col = "#263238")
-
-    # Mark critical values
     abline(v = res$crit_005, col = "#E65100", lty = 2, lwd = 2)
     abline(v = res$crit_001, col = "#B71C1C", lty = 2, lwd = 2)
-
-    # Mark calculated chisq
     abline(v = res$chisq_calc, col = "#00796B", lwd = 3.5)
 
     legend("topright",

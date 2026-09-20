@@ -2,8 +2,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![R: >= 4.0](https://img.shields.io/badge/R-%3E%3D4.0-brightgreen.svg)](https://www.r-project.org/)
+[![Online Demo: GitHub Pages](https://img.shields.io/badge/Online_Demo-GitHub_Pages-success)](https://gzy2520.github.io/Chi-square-calculator/)
 
 专为遗传学研究、孟德尔分离比验证、双基因上位/互作分析以及卡方适合度检验打造的高精度开源计算器。
+
+👉 **在线直接使用（无需安装）**：[https://gzy2520.github.io/Chi-square-calculator/](https://gzy2520.github.io/Chi-square-calculator/)
 
 支持自由输入或设置任意理论遗传分离比（如 `9:7` 互补作用、`9:3:4` 隐性上位、`12:3:1` 显性上位、`13:3` 显性抑制、`15:1` 重叠基因、`9:6:1` 积加作用、`2:1` 显性致死、`9:3:3:1`、`3:1` 等），自动计算卡方统计量、精准 P 值、对应 $\alpha=0.05$ 与 $\alpha=0.01$ 的临界分布表值，并输出严谨的生物学显著性结论。
 
